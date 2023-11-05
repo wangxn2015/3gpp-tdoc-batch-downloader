@@ -15,3 +15,7 @@ Note:
 2.	This is an initial version, therefore the code is unpolished. Please feel free to contact the author for bugs or other issues, as well as job-related topics. Hope you enjoy the journey of 3GPP study.
 
 Author Information：Xiaonan (wangxn_007@163.com) currently working at Baicells
+
+![Image text](manual/images/1.png)
+![Image text](manual/images/2.png)
+![Image text](manual/images/3.png)
