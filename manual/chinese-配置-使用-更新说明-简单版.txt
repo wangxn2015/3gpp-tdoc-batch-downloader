@@ -1,0 +1,24 @@
+2023.7.29		v1.0.1	日志中添加下载进度；
+			解决关闭按钮的异常。
+2023.7.28		v1 	第一版本。
+
+
+注：代码中存在待完善之处，欢迎反馈。
+Author: 王肖楠 wangxn_007@163.com
+
+安装和使用方法介绍：
+
+一.安装
+1. 使用 命令行 进行安装依赖的操作。（以下以【windows PowerShell】为例）
+    a. 使用cd命令，打开文件夹所在目录 (例如，下载脚本simple-tdoc-batch-download.py所属文件夹位于桌面 C:\Users\admin\Desktop\3gpp-tdoc-batch-downloader)
+        cd C:\Users\admin\Desktop\3gpp-tdoc-batch-downloader
+    
+    b. 使用pip命令，安装依赖 (此为windows示例)
+        pip install -r  .\requirements.txt
+
+二.使用
+在命令行输入以下(windows)：
+python .\simple-tdoc-batch-download.py
+
+
+
