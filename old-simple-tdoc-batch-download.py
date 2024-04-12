@@ -111,7 +111,6 @@ class FileDownloaderApp(tk.Frame):
 
         self.contents = ""  
         self.file_list = []
-        self.company_list = []
         self.file_urls = []
         self.save_path = ""
         self.downloader_list = []
@@ -188,26 +187,6 @@ class FileDownloaderApp(tk.Frame):
             self.update_log(text)
         self.textbox_filenames.edit_modified(False)  # Reset the modified flag for text widget!
 
-    def on_text_insert_companies(self, event):
-        # the flag below is to prevent this function being called twice
-        flag = self.textbox_cmpy_names.edit_modified()
-        if flag:
-            self.current_line = self.textbox_cmpy_names.index("insert").split(".")[0]
-            print(f"line {self.current_line}")
-            # self.check_if_text_repeated("download_list")
-            self.textbox_cmpy_names.see(f"{self.current_line}.0")
-
-            l = len(self.textbox_cmpy_names.get("1.0", tk.END).strip().split("\n"))
-            m = self.textbox_cmpy_names.get("1.0", tk.END).strip().split("\n")
-            print(f"self.textbox_cmpy_names.get(): {m}")
-            if l == 1 and m[0] == '':
-                l = 0
-            # text = f"-- #{l} files are selected."
-            # # print(text)
-            # self.label_var1.set(text)
-            # self.update_log(text)
-        self.textbox_cmpy_names.edit_modified(False)  # Reset the modified flag for text widget!
-
     def update_label(self):
         try:
             message = self.queue.get(0)
@@ -269,16 +248,12 @@ class FileDownloaderApp(tk.Frame):
         self.root.after(sleep_time, self.process_message)
 
     # main download thread
-    def download_files(self, file_urls, save_path, my_queue, stop_event,l, file_company_list):
+    def download_files(self, file_urls, save_path, my_queue, stop_event):
         self.process_message()
-
-        for i, url in enumerate(file_urls):
+        for url in file_urls:
             try:
                 self.update_log(f'\nMain Download Thread: Creating FileDownloader for {url.split("/")[-1]}')
-                if l==0:
-                    downloader = FileDownloader(url, f"{save_path}/{url.split('/')[-1]}", my_queue, stop_event)
-                else:
-                    downloader = FileDownloader(url, f"{save_path}/{file_company_list[i]}.zip", my_queue, stop_event)
+                downloader = FileDownloader(url, f"{save_path}/{url.split('/')[-1]}", my_queue, stop_event)
                 downloader.setDaemon(True)
                 downloader.start()
                 self.downloader_list.append(downloader)
@@ -380,8 +355,6 @@ class FileDownloaderApp(tk.Frame):
         self.progress_per_file = 0
         
         self.file_list = []
-        self.company_list=[]
-        self.file_company_list=[]
         self.successful_downloads = []
         self.failed_downloads = []
         self.downloader_list = []
@@ -396,28 +369,6 @@ class FileDownloaderApp(tk.Frame):
         self.clean_state()
         # start
         self.file_list = self.textbox_filenames.get("1.0", tk.END).strip().split("\n")
-        file_len= len(self.file_list)
-
-        self.company_list = self.textbox_cmpy_names.get("1.0", tk.END).strip().split("\n")
-        for i in range(len(self.company_list)):
-                self.company_list[i] =self.company_list[i].replace(',', '').replace(' ', '').replace('.', '').replace('(', '').replace(')', '')
-        print(self.company_list)
-        # check and put company name into the save path name
-        
-        m = self.textbox_cmpy_names.get("1.0", tk.END).strip().split("\n")
-        l = len(m)
-        # print(f"self.textbox_cmpy_names.get(): {m}")
-        if l == 1 and m[0] == '':
-            l = 0
-        
-        if file_len==l and l!=0:
-            print(f"file_len==l, {file_len}")
-            self.file_company_list = ['']* file_len
-            for i in range(file_len):
-                self.file_company_list[i] = f"{self.file_list[i]}-{self.company_list[i]}"
-        else:
-            l=0
-
         #  URL + filename +.zip 
         self.file_urls = [f"{self.textbox_url.get()}/{filename}.zip" for filename in self.file_list]
         print("files are: ")
@@ -443,7 +394,7 @@ class FileDownloaderApp(tk.Frame):
         self.update_progress_bar()
 
         download_thread = threading.Thread(target=self.download_files,
-                                           args=(self.file_urls, self.save_path, self.queue, self.stop_event, l, self.file_company_list))
+                                           args=(self.file_urls, self.save_path, self.queue, self.stop_event))
         download_thread.setDaemon(True)
         download_thread.start()
 
@@ -531,19 +482,19 @@ class FileDownloaderApp(tk.Frame):
     def layout(self):
         # Step1. website URL label
         self.label_url = tk.Label(self.root, text="Step①. Specify URL ↓", font=("Arial", 12, "bold"))
-        self.label_url.grid(row=0, column=0, columnspan=2, padx=5, pady=1, sticky='w')
+        self.label_url.grid(row=0, column=0, padx=5, pady=1, sticky='w')
 
 
         # 1a. website URL
-        self.textbox_url = tk.Entry(self.root, width=15, font=("Arial", 12))
-        self.textbox_url.grid(row=1, column=0, columnspan=3, padx=5, pady=1, sticky='nesw')
+        self.textbox_url = tk.Entry(self.root, width=55, font=("Arial", 12))
+        self.textbox_url.grid(row=1, column=0, columnspan=3, padx=5, pady=1, sticky='w')
         self.textbox_url.insert("end", "https://www.3gpp.org/ftp/tsg_ran/WG1_RL1/TSGR1_113/Docs")
         
         # Step2. save path
         self.label_savepath = tk.Label(self.root, text="Step②. Set save path ↓", font=("Arial", 12, "bold"))
-        self.label_savepath.grid(row=2, column=0, columnspan=2, padx=5, pady=1, sticky='w')
-        self.textbox_savepath = tk.Entry(self.root, width=15, font=("Arial", 12))
-        self.textbox_savepath.grid(row=3, column=0, columnspan=3, padx=5, pady=1, sticky='nesw')
+        self.label_savepath.grid(row=2, column=0, columnspan=3, padx=5, pady=1, sticky='w')
+        self.textbox_savepath = tk.Entry(self.root, width=55, font=("Arial", 12))
+        self.textbox_savepath.grid(row=3, column=0, columnspan=2, padx=5, pady=1, sticky='w')
         self.textbox_savepath.insert("end", "./Tdocs_download_dir")
 
         # Step3. filenames
@@ -557,49 +508,44 @@ class FileDownloaderApp(tk.Frame):
         self.textbox_filenames.grid(row=7, column=0, padx=5, pady=1, sticky='nw')
         # self.textbox_filenames.insert("end", "R1-2305660"+'\n'+"R1-2305896")
 
-        # still step3, company names of the files to be downloaded
-        self.textbox_cmpy_names = ScrolledText(self.root, height=7, width=13, wrap=tk.WORD, font=("Arial", 12))
-        self.textbox_cmpy_names.grid(row=7, column=1, padx=5, pady=1, sticky='nw')
-
 
         # 4. failed file names  Row 0
         self.status_label_files_failed = tk.Label(self.root, text="Failed files:    ",
                                                   font=("Arial", 12, "bold"))
-        self.status_label_files_failed.grid(row=6, column=2, padx=5, pady=1, sticky='ne')
+        self.status_label_files_failed.grid(row=6, column=1, padx=5, pady=1, sticky='ne')
 
-        self.textbox_failed_files = ScrolledText(self.root, height=7, width=15, wrap=tk.WORD,
+        self.textbox_failed_files = ScrolledText(self.root, height=7, width=13, wrap=tk.WORD,
                                                  bg="lightgray", font=("Arial", 12))
-        self.textbox_failed_files.grid(row=7, column=2, padx=5, pady=1, sticky='ne')
+        self.textbox_failed_files.grid(row=7, column=1, padx=5, pady=1, sticky='ne')
         self.textbox_failed_files.insert("end", "")
-
 
         # 4. button for download
         self.button_download = tk.Button(self.root, text="Step④. Download", fg="#3B3BFF",
                                          font=("Arial", 12, "bold"), width=15,
                                          command=self.start_download)
-        self.button_download.grid(row=8, rowspan=1, column=0,padx=5, pady=1, sticky='nw')
+        self.button_download.grid(row=8, column=0, padx=5, pady=1, sticky='w')
         # 5. button for close
-        self.button_close = tk.Button(self.root, text="Close window", width=21, command=self.close_program)
-        self.button_close.grid(row=14, column=2, padx=5, pady=1, sticky='ne')
+        self.button_close = tk.Button(self.root, text="Close window", width=13, command=self.close_program)
+        self.button_close.grid(row=14, column=1, padx=15, pady=1, sticky='ne')
 
         # status label 1 -- number of files
         self.label_var1 = tk.StringVar()
         self.label_var1.set("-- Number of files in total.")
         self.status_label1 = tk.Label(self.root, textvariable=self.label_var1,
                                       fg="#316262", font=("Arial", 10, "bold"))
-        self.status_label1.grid(row=9, column=0, columnspan=3, padx=5, pady=1, sticky='w')
+        self.status_label1.grid(row=9, column=0, columnspan=2, padx=5, pady=1, sticky='w')
 
         # progress bar
         self.progress_var = tk.DoubleVar()
-        self.progress_bar = ttk.Progressbar(root, variable=self.progress_var, length=100, maximum=100, style="custom.Horizontal.TProgressbar")    
-        self.progress_bar.grid(row=10, column=0, columnspan=3, padx=5, pady=1, sticky='ew')
+        self.progress_bar = ttk.Progressbar(root, variable=self.progress_var, length=480, maximum=100, style="custom.Horizontal.TProgressbar")    
+        self.progress_bar.grid(row=10, column=0, columnspan=2, padx=5, pady=1, sticky='w')
 
         # status label 3 -- download files process info
         self.label_var_process_info = tk.StringVar()
         self.label_var_process_info.set("-- Process Info.")
         self.status_label_files_process = tk.Label(self.root, textvariable=self.label_var_process_info,
                                                    fg="#316262", font=("Arial", 10, "bold"))
-        self.status_label_files_process.grid(row=11, column=0, columnspan=3, padx=5, pady=1, sticky='nw')
+        self.status_label_files_process.grid(row=11, column=0, columnspan=2, padx=5, pady=1, sticky='nw')
 
         # # status label 2 -- number of files download succeeded
         # self.label_var2 = tk.StringVar()
@@ -615,26 +561,24 @@ class FileDownloaderApp(tk.Frame):
 
         self.status_label_files_failed = tk.Label(self.root, textvariable=self.label_failed_info,
                                                   fg="#316262", font=("Arial", 10, "bold"))
-        self.status_label_files_failed.grid(row=12, column=0, columnspan=3, padx=5, pady=1, sticky='nw')
+        self.status_label_files_failed.grid(row=12, column=0, columnspan=2, padx=5, pady=1, sticky='nw')
 
         # column for Log info
         self.label_info = tk.Label(root, text="Log information↓", font=("Arial", 12, "bold"))
         self.label_info.grid(row=14, column=0, columnspan=2, padx=5, pady=1, sticky='w')
 
         # self.log_text = tk.Text(root, height=10, wrap=tk.WORD, state=tk.DISABLED)
-        self.log_text = ScrolledText(root, width=6, height=15, wrap=tk.WORD,
+        self.log_text = ScrolledText(root, width=78, height=15, wrap=tk.WORD,
                                      font=("Arial", 8, "bold"), fg="#316262", bg="lightgray")
-        self.log_text.grid(row=15, column=0, columnspan=3,  padx=5, pady=1, sticky='nesw')
+        self.log_text.grid(row=15, column=0, columnspan=3,  padx=5, pady=1, sticky='w')
         # self.log_text.grid(row=12, column=1, rowspan=5, columnspan=2,  padx=5, pady=1, sticky='en')
 
-        self.label_auth = tk.Label(self.root, text="Initial Version, BUGs guaranteed!   Baicells Technologies Co.Ltd    Author: Wxn 2023.7", font=("Arial", 8))
+        self.label_auth = tk.Label(self.root, text="Initial Version, BUGs guaranteed!\t   Baicells Technologies Co.Ltd \tAuthor: Wxn 2023.7", font=("Arial", 10))
         self.label_auth.grid(row=16, column=0, columnspan=3, padx=5, pady=1, sticky='w')
-        # self.label_auth1 = tk.Label(self.root, text="Initial Version, BUGs guaranteed!", font=("Arial", 10))
-        # self.label_auth1.grid(row=17, column=0, columnspan=3, padx=5, pady=1, sticky='w')
 
         self.root.columnconfigure(0, minsize=15)
         self.root.columnconfigure(1, minsize=10)
-        self.root.columnconfigure(2, minsize=10)
+        self.root.columnconfigure(2, minsize=0)
 
         self.check_n_load_from_txt()
         self.fit_window_size()
@@ -643,9 +587,6 @@ class FileDownloaderApp(tk.Frame):
         # self.textbox_filenames.bind("<<TextInsert>>", self.on_text_insert)
         self.textbox_filenames.bind("<<Modified>>", self.on_text_insert)
         self.textbox_filenames.insert("end", self.contents)
-
-        self.textbox_cmpy_names.bind("<<Modified>>", self.on_text_insert_companies)
-
 
 
 if __name__ == "__main__":
